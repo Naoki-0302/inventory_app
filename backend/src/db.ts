@@ -38,7 +38,7 @@ export async function query<T extends QueryResultRow>(
         return result.rows;
 
     } catch (error) {
-        console.error('SQL実行中にエラー初声4位',error);
+        console.error('SQL実行中にエラー発生',error);
         throw error;
     }
 }
