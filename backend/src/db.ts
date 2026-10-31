@@ -28,6 +28,9 @@ export async function closePool() {
 }
 
 // Query実行
+// 取得したデータを配列で返す
+// 型参照をつかうと、戻り値のプロパティのデータ型がTSにより認識される。
+// TはQueryResultRowを満たす型でなければならない
 export async function query<T extends QueryResultRow>(
     sql: string,
     params: unknown[] = []
@@ -38,7 +41,7 @@ export async function query<T extends QueryResultRow>(
         return result.rows;
 
     } catch (error) {
-        console.error('SQL実行中にエラー発生',error);
+        // console.error('SQL実行中にエラー発生',error);
         throw error;
     }
 }
@@ -60,8 +63,9 @@ export async function tran<T>(
 
     } catch (err) {
         await client.query('rollback');
-        console.error('トランザクション中にエラー発生:',err);
+        // console.error('トランザクション中にエラー発生:',err);
         throw err;
+
     }   finally{
         client.release(); // プールへ返却
     }

@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react';
+import { downloadCsv } from '../utils/csv';
+import { formatJST } from '../utils/date';
 
 type Master = {
     id: number;
@@ -34,7 +36,7 @@ function ReceiptPage() {
 
                 // 各URLに並列Request送信。順番上から下のURLへ
                 const res = await Promise.all(
-                    urls.map(url => fetch(url))
+                    urls.map(url => fetch(url,{credentials: 'include'}))
                 );
                 // fetch()では404や500がrejectされないらしい
                 // some(): 1つでもTrueならTrue  every(): すべてTrueならTrue  
@@ -90,16 +92,17 @@ function ReceiptPage() {
                     product_id: Number(productId),
                     lot_number: lotNumber.trim() || null,
                     quantity: Number(quantity)
-                })
+                }),
+                credentials: 'include'
             });
 
             console.log(res);
 
-            
-            if (!res.ok){
+
+            if (!res.ok) {
                 const data = await res.json();
                 throw new Error(data.error);
-            } 
+            }
 
             alert('入庫登録完了');
 
@@ -111,10 +114,58 @@ function ReceiptPage() {
 
         } catch (error) {
             console.error(error);
-            alert(error instanceof Error 
-                    ? error.message
-                    : '入庫登録に失敗しました。'
+            alert(error instanceof Error
+                ? error.message
+                : '入庫登録に失敗しました。'
             );
+        }
+    };
+
+    // 入庫CSV出力
+    const exportReceipts = async () => {
+        try {
+            const res = await fetch('http://localhost:3000/api/receipts',{
+                credentials: 'include'
+            });
+
+            if (!res.ok) throw new Error('入庫データ取得に失敗しました。');
+
+            type Receipt = {
+                id: number;
+                receipt_date: string;
+                shipper_id: number;
+                warehouse_id: number;
+                product_id: number;
+                lot_number: string | null;
+                quantity: number;
+                created_at: string;
+                updated_at: string;
+            };
+
+            const data: Receipt[] = await res.json();
+
+            const header = [
+                '入庫ID', '入庫日', '荷主ID', '倉庫ID',
+                '商品ID', 'ロット番号', '数量', '登録日時', '更新日時'
+            ];
+
+            const rows = data.map(r => [
+                String(r.id),
+                r.receipt_date.slice(0, 10),
+                String(r.shipper_id),
+                String(r.warehouse_id),
+                String(r.product_id),
+                r.lot_number ?? '',
+                String(r.quantity),
+                formatJST(r.created_at),
+                formatJST(r.updated_at)
+            ]);
+
+            downloadCsv('receipts.csv', header, rows);
+
+        } catch (error) {
+            console.error(error);
+            alert('入庫CSV出力に失敗しました。');
         }
     };
 
@@ -214,6 +265,10 @@ function ReceiptPage() {
                 </div>
 
                 <button type="submit">登録</button>
+                        <br />
+                <button type="button" onClick={exportReceipts}>
+                    入庫CSV出力
+                </button>
             </form>
 
         </>
