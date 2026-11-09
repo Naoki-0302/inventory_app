@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import '../styles/master.css';
 
 // 荷主データの型
 type Shipper = {
@@ -66,47 +67,51 @@ function ShipperPage() {
 
     return (
         <>
-            <h1>荷主マスター</h1>
+            <div className='master-page'>
 
-            <h2>荷主登録</h2>
+                <h1>荷主マスター</h1>
 
-            <form onSubmit={addShipper}>
-                <input
-                    type="text"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    placeholder="荷主名"
-                />
-                <button type="submit">登録</button>
-            </form>
+                <h2>荷主登録</h2>
 
-            <h2>荷主一覧</h2>
-            {/* <ul>
+                <form onSubmit={addShipper}>
+                    <input
+                        type="text"
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                        placeholder="荷主名"
+                        required
+                    />
+                    <button type="submit">登録</button>
+                </form>
+
+                <h2>荷主一覧</h2>
+                {/* <ul>
                 {shippers.map((shipper) => (
                     <li key={shipper.id}>
-                        {shipper.name}
+                    {shipper.name}
                     </li>
-                ))}
-            </ul> */}
-
-            <table>
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>荷主名</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {shippers.map((s) => (
-                        <tr key={s.id}>
-                            <td>{s.id}</td>
-                            <td>{s.name}</td>
-                        </tr>
                     ))}
-                </tbody>
-            </table>
+                    </ul> */}
+
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>荷主名</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {shippers.map((s) => (
+                            <tr key={s.id}>
+                                <td>{s.id}</td>
+                                <td>{s.name}</td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
 
 
+            </div>
         </>
     );
 }

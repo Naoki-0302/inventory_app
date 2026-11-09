@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import '../styles/master.css';
 
 // 倉庫データの型
 type Warehouse = {
@@ -71,48 +72,51 @@ function WarehousePage() {
 
     return (
         <>
-            <h1>倉庫マスター</h1>
+            <div className="master-page">
 
-            <h2>倉庫登録</h2>
+                <h1>倉庫マスター</h1>
 
-            <form onSubmit={addWarehouse}>
-                <input
-                    type="text"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    placeholder="倉庫名"
-                    required
-                />
-                <button type="submit">登録</button>
-            </form>
+                <h2>倉庫登録</h2>
 
-            <h2>倉庫一覧</h2>
+                <form onSubmit={addWarehouse}>
+                    <input
+                        type="text"
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                        placeholder="倉庫名"
+                        required
+                    />
+                    <button type="submit">登録</button>
+                </form>
 
-            {/* <ul>
+                <h2>倉庫一覧</h2>
+
+                {/* <ul>
                 {warehouses.map((warehouse) => (
                     <li key={warehouse.id}>
-                        {warehouse.name}
+                    {warehouse.name}
                     </li>
-                ))}
-            </ul> */}
-
-            <table>
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>倉庫名</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {warehouses.map((warehouse) => (
-                        <tr key={warehouse.id}>
-                            <td>{warehouse.id}</td>
-                            <td>{warehouse.name}</td>
-                        </tr>
                     ))}
-                </tbody>
-            </table>
+                    </ul> */}
 
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>倉庫名</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {warehouses.map((warehouse) => (
+                            <tr key={warehouse.id}>
+                                <td>{warehouse.id}</td>
+                                <td>{warehouse.name}</td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+
+            </div>
         </>
     );
 }

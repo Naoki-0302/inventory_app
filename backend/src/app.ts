@@ -296,6 +296,7 @@ app.post('/api/products', authenticate, async (req: Request, res: Response) => {
         const { shipper_id, product_code, name } = req.body ?? {};
 
         // 入力チェック
+        // フロントで制御しているから不要かもやけど
         if (
             !Number.isInteger(shipper_id) ||
             shipper_id <= 0 ||
@@ -345,16 +346,15 @@ app.put('/api/products/:id', authenticate, async (req: Request, res: Response) =
         // Requestを定数格納
         const id = Number(req.params.id);
         // const {id} = req.params;
-        const {product_code, name} = req.body ?? {};
+        const { product_code, name } = req.body ?? {};
 
         // 入力チェック
-        if(
-            !Number.isInteger(id) || id<=0 ||
+        if (
+            !Number.isInteger(id) || id <= 0 ||
             typeof product_code !== 'string' || !product_code.trim() ||
             typeof name !== 'string' || !name.trim()
-        )
-        {
-            return res.status(400).json({error : '入力内容が不正です。'});
+        ) {
+            return res.status(400).json({ error: '入力内容が不正です。' });
         }
 
         const sql = `
@@ -365,10 +365,10 @@ app.put('/api/products/:id', authenticate, async (req: Request, res: Response) =
             returning id, shipper_id, product_code, name
         `;
 
-        const rows = await query(sql,[product_code.trim(),name.trim(),id]);
+        const rows = await query(sql, [product_code.trim(), name.trim(), id]);
 
         if (rows.length === 0) {
-            return res.status(404).json({error: '商品が存在しません。'});
+            return res.status(404).json({ error: '商品が存在しません。' });
         }
 
         res.status(200).json(rows[0]);
@@ -378,20 +378,20 @@ app.put('/api/products/:id', authenticate, async (req: Request, res: Response) =
         if (error instanceof DatabaseError &&
             error.code === '23505'
         ) {
-            return res.status(409).json({error: '同じ商品コードが登録されています。'});
+            return res.status(409).json({ error: '同じ商品コードが登録されています。' });
         }
         res.status(500).json({ error: '商品更新に失敗しました。' });
     }
 });
 
 // 商品削除
-app.delete('/api/products/:id',authenticate, async (req:Request,res:Response) => {
+app.delete('/api/products/:id', authenticate, async (req: Request, res: Response) => {
     try {
         const id = Number(req.params.id);
 
         // 入力チェック
-        if (!Number.isInteger(id) || id <= 0 ) {
-            return res.status(404).json({error: '商品IDが不正です。'});
+        if (!Number.isInteger(id) || id <= 0) {
+            return res.status(404).json({ error: '商品IDが不正です。' });
         }
 
         const sql = `
@@ -399,21 +399,21 @@ app.delete('/api/products/:id',authenticate, async (req:Request,res:Response) =>
             where id = $1
             returning id
         `;
-        const rows = await query(sql,[id]);
+        const rows = await query(sql, [id]);
         if (rows.length === 0) {
-            return res.status(404).json({error:'商品が存在しません。'});
+            return res.status(404).json({ error: '商品が存在しません。' });
         }
-        res.status(200).json({message: '商品を削除しました。'});
+        res.status(200).json({ message: '商品を削除しました。' });
 
     } catch (error) {
         console.error(error);
 
         // FKによりエラー　理由：入出庫で使用しているから
         if (error instanceof DatabaseError && error.code === '23503') {
-            return res.status(409).json({error:'入出庫履歴があるため削除できません。'});
+            return res.status(409).json({ error: '入出庫履歴があるため削除できません。' });
         }
 
-        res.status(500).json({error:'商品を削除できませんでした。'});
+        res.status(500).json({ error: '商品を削除できませんでした。' });
     }
 });
 
@@ -553,26 +553,70 @@ app.post('/api/shipments', authenticate, async (req: Request, res: Response) => 
             // 現在庫を取得
             // 日付条件が重要
             const stockSql = `
-                SELECT COALESCE(SUM(quantity), 0) AS stock_quantity
-                FROM (
-                    SELECT quantity
-                    FROM receipts
-                    WHERE shipper_id = $1
-                      AND warehouse_id = $2
-                      AND product_id = $3
-                      AND lot_number IS NOT DISTINCT FROM $4
-                      AND receipt_date <= $5
-                    UNION ALL
+WITH movement AS (
+    SELECT receipt_date AS movement_date, quantity AS qty
+    FROM receipts
+    WHERE shipper_id = $1
+      AND warehouse_id = $2
+      AND product_id = $3
+      AND lot_number IS NOT DISTINCT FROM $4
 
-                    SELECT -quantity
-                    FROM shipments
-                    WHERE shipper_id = $1
-                      AND warehouse_id = $2
-                      AND product_id = $3
-                      AND lot_number IS NOT DISTINCT FROM $4
-                      AND shipment_date <= $5
-                ) AS stock_data
+    UNION ALL
+
+    SELECT shipment_date AS movement_date, -quantity AS qty
+    FROM shipments
+    WHERE shipper_id = $1
+      AND warehouse_id = $2
+      AND product_id = $3
+      AND lot_number IS NOT DISTINCT FROM $4
+),
+daily AS (
+    SELECT movement_date, SUM(qty) AS daily_qty
+    FROM movement
+    GROUP BY movement_date
+),
+stock AS (
+    SELECT
+        movement_date,
+        SUM(daily_qty) OVER (ORDER BY movement_date) AS stock_quantity
+    FROM daily
+)
+SELECT MIN(stock_quantity) AS min_stock_quantity
+FROM (
+    -- 出庫日当日の在庫（その日に履歴がなくても取得）
+    SELECT COALESCE(SUM(daily_qty), 0) AS stock_quantity
+    FROM daily
+    WHERE movement_date <= $5
+
+    UNION ALL
+
+    -- 出庫日以降の累積在庫
+    SELECT stock_quantity
+    FROM stock
+    WHERE movement_date > $5
+) AS target_stock
             `;
+            // const stockSql = `
+            //     SELECT COALESCE(SUM(quantity), 0) AS stock_quantity
+            //     FROM (
+            //         SELECT quantity
+            //         FROM receipts
+            //         WHERE shipper_id = $1
+            //           AND warehouse_id = $2
+            //           AND product_id = $3
+            //           AND lot_number IS NOT DISTINCT FROM $4
+            //           AND receipt_date <= $5
+            //         UNION ALL
+
+            //         SELECT -quantity
+            //         FROM shipments
+            //         WHERE shipper_id = $1
+            //           AND warehouse_id = $2
+            //           AND product_id = $3
+            //           AND lot_number IS NOT DISTINCT FROM $4
+            //           AND shipment_date <= $5
+            //     ) AS stock_data
+            // `;
 
             const params = [
                 shipper_id,
@@ -583,13 +627,16 @@ app.post('/api/shipments', authenticate, async (req: Request, res: Response) => 
             ];
 
             const result = await client.query(stockSql, params);
-            const stockQuantity = Number(result.rows[0].stock_quantity);
+            const minStockQuantity = Number(result.rows[0].min_stock_quantity);
+            // const stockQuantity = Number(result.rows[0].stock_quantity);
 
-            console.log(stockQuantity); // 在庫
+            console.log(minStockQuantity); // 在庫
+            // console.log(stockQuantity); // 在庫
             console.log(quantity);　    // 出庫数
 
             // 在庫不足チェック
-            if (stockQuantity < quantity) {
+            if (minStockQuantity < quantity) {
+            // if (stockQuantity < quantity) {
                 throw new Error('在庫不足');　// catchへ
             }
 
@@ -634,6 +681,89 @@ app.post('/api/shipments', authenticate, async (req: Request, res: Response) => 
     }
 });
 
+// 出庫可能数量一覧
+app.get('/api/available-stocks', authenticate, async (req: Request, res: Response) => {
+    try {
+        const { target_date } = req.query;
+
+        if (
+            typeof target_date !== 'string' ||
+            !/^\d{4}-\d{2}-\d{2}$/.test(target_date)
+        ) {
+            return res.status(400).json({ error: '基準日が不正です。' });
+        }
+
+        const sql = `
+            WITH movement AS (
+                SELECT
+                    receipt_date AS movement_date,
+                    shipper_id, warehouse_id, product_id,
+                    lot_number, quantity AS qty
+                FROM receipts
+
+                UNION ALL
+
+                SELECT
+                    shipment_date AS movement_date,
+                    shipper_id, warehouse_id, product_id,
+                    lot_number, -quantity AS qty
+                FROM shipments
+            ),
+            daily AS (
+                SELECT
+                    movement_date,
+                    shipper_id, warehouse_id, product_id,
+                    lot_number,
+                    SUM(qty) AS daily_qty
+                FROM movement
+                GROUP BY
+                    movement_date, shipper_id,
+                    warehouse_id, product_id, lot_number
+            ),
+            stock AS (
+                SELECT
+                    *,
+                    SUM(daily_qty) OVER (
+                        PARTITION BY
+                            shipper_id, warehouse_id,
+                            product_id, lot_number
+                        ORDER BY movement_date
+                    ) AS stock_quantity
+                FROM daily
+            ),
+            available AS (
+                SELECT
+                    shipper_id, warehouse_id,
+                    product_id, lot_number,
+                    LEAST(
+                        COALESCE(SUM(daily_qty) FILTER (
+                            WHERE movement_date <= $1
+                        ), 0),
+                        COALESCE(MIN(stock_quantity) FILTER (
+                            WHERE movement_date > $1
+                        ), COALESCE(SUM(daily_qty) FILTER (
+                            WHERE movement_date <= $1
+                        ), 0))
+                    ) AS available_quantity
+                FROM stock
+                GROUP BY
+                    shipper_id, warehouse_id,
+                    product_id, lot_number
+            )
+            SELECT *
+            FROM available
+            WHERE available_quantity > 0
+            ORDER BY shipper_id, warehouse_id, product_id, lot_number
+        `;
+
+        const rows = await query(sql, [target_date]);
+        res.json(rows);
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: '出庫可能数量の取得に失敗しました。' });
+    }
+});
 
 // 在庫チェック
 app.get('/api/stocks', authenticate, async (req: Request, res: Response) => {

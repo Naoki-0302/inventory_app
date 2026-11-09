@@ -22,7 +22,8 @@ type Stock = {
     warehouse_id: number;
     product_id: number;
     lot_number: string | null;
-    stock_quantity: string;
+    // stock_quantity: string;
+    available_quantity: string;
 };
 
 function ShipmentPage() {
@@ -84,7 +85,8 @@ function ShipmentPage() {
         }
         try {
             const res = await fetch(
-                `http://localhost:3000/api/stocks?target_date=${shipmentDate}`,
+                `http://localhost:3000/api/available-stocks?target_date=${shipmentDate}`,
+                // `http://localhost:3000/api/stocks?target_date=${shipmentDate}`,
                 {
                     credentials: 'include'
                 });
@@ -92,6 +94,7 @@ function ShipmentPage() {
                 throw new Error('在庫照会に失敗しました。')
             }
             const data: Stock[] = await res.json();
+            // console.log('出庫可能在庫一覧:', data);
             setStocks(data);
 
         } catch (error) {
@@ -106,7 +109,7 @@ function ShipmentPage() {
         stocks.some(s =>
             s.shipper_id === Number(shipperId) &&
             s.warehouse_id === w.id &&
-            Number(s.stock_quantity) > 0
+            Number(s.available_quantity) > 0
         )
     );
 
@@ -118,7 +121,7 @@ function ShipmentPage() {
             s.shipper_id === Number(shipperId) &&
             s.warehouse_id === Number(warehouseId) &&
             s.product_id === p.id &&
-            Number(s.stock_quantity) > 0
+            Number(s.available_quantity) > 0
         )
     );
 
@@ -127,7 +130,7 @@ function ShipmentPage() {
         s.shipper_id === Number(shipperId) &&
         s.warehouse_id === Number(warehouseId) &&
         s.product_id === Number(productId) &&
-        Number(s.stock_quantity) > 0
+        Number(s.available_quantity) > 0
     );
 
     // 出庫登録
@@ -329,7 +332,7 @@ function ShipmentPage() {
                                 value={s.lot_number ?? '__NO__LOT__'}
                             >
                                 {s.lot_number ?? 'ロットなし'}
-                                (在庫：{s.stock_quantity})
+                                (出庫可能数量：{s.available_quantity})
                             </option>
                         ))}
                     </select>

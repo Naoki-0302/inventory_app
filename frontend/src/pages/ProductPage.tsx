@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
+import '../styles/master.css';
 
 // 商品データの型
 type Product = {
+    // 取得するカラムに合わせること
     id: number;
     shipper_id: number;
     shipper_name: string;
@@ -10,11 +12,13 @@ type Product = {
 };
 // 荷主データの型
 type Shipper = {
+    // 取得するカラムに合わせること
     id: number;
     name: string;
 };
 
 function ProductPage() {
+    // マスター格納用
     const [products, setProducts] = useState<Product[]>([]);
     const [shippers, setShippers] = useState<Shipper[]>([]);
 
@@ -34,18 +38,25 @@ function ProductPage() {
     const fetchProducts = async () => {
         try {
             const res: Response = await fetch('http://localhost:3000/api/products', {
+                // 別Originへの送信＋Cookie認証
                 credentials: 'include',
             });
             if (!res.ok) throw new Error('商品一覧の取得に失敗しました。');
 
+            // JSONをJSオブジェクトに変換する
             const data: Product[] = await res.json();
+
+            // マスター取得データを変数保持
             setProducts(data);
 
         } catch (error) {
+            console.error(error);
             alert(error);
         }
     };
+
     // 荷主一覧(get)
+    // コンボボックス
     const fetchShippers = async () => {
         try {
             const res = await fetch('http://localhost:3000/api/shippers', {
@@ -54,9 +65,12 @@ function ProductPage() {
             if (!res.ok) throw new Error('荷主一覧の取得に失敗しました。');
 
             const data: Shipper[] = await res.json();
+
+            // マスター取得データを変数保持
             setShippers(data);
 
         } catch (error) {
+            console.error(error);
             alert(error instanceof Error ? error.message : '荷主一覧の取得に失敗しました。');
         }
     };
@@ -95,9 +109,10 @@ function ProductPage() {
     // };
 
     // 編集用関数
+    // 商品マスター1行が引数
     const editProduct = (p: Product) => {
-        setEditingId(p.id);
-        setShipperId(String(p.shipper_id));
+        setEditingId(p.id); // 編集用Flg
+        setShipperId(String(p.shipper_id)); // selectタグのvalueは文字列扱い
         setProductCode(p.product_code);
         setName(p.name);
     };
@@ -152,6 +167,7 @@ function ProductPage() {
 
     // 削除(DELETE)　条件：入出庫履歴がない商品のみ
     const deleteProduct = async (product: Product) => {
+        // キャンセルの場合、削除処理を終了する
         if (!window.confirm(`${product.name}を削除しますか？`)) return;
 
         try {
@@ -189,96 +205,99 @@ function ProductPage() {
 
     return (
         <>
-            <h1>商品マスター</h1>
-            <h2>{editingId === null ? '商品登録' : '商品編集'}</h2>
+            <div className='master-page'>
 
-            <form onSubmit={saveProduct}>
+                <h1>商品マスター</h1>
+                <h2>{editingId === null ? '商品登録' : '商品編集'}</h2>
 
-                <select
-                    value={shipperId}
-                    onChange={(e) => setShipperId(e.target.value)}
-                     disabled={editingId !== null}
-                    required
-                >
-                    <option value="">荷主を選択</option>
-                    {shippers.map((shipper) => (
-                        <option key={shipper.id} value={shipper.id}>
-                            {shipper.name}
-                        </option>
-                    ))}
-                </select>
+                <form onSubmit={saveProduct}>
 
-                <input
-                    type="text"
-                    value={productCode}
-                    onChange={(e) => setProductCode(e.target.value)}
-                    placeholder="商品コード"
-                    required
-                />
-                <input
-                    type="text"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    placeholder="商品名"
-                    required
-                />
-
-                <button type="submit">{editingId === null ? '登録' : '編集'}</button>
-
-                {editingId !== null && (
-                    <button
-                        type='button'
-                        onClick={() => {
-                            setEditingId(null);
-                            setShipperId('');
-                            setProductCode('');
-                            setName('');
-                        }}
+                    <select
+                        value={shipperId}
+                        onChange={(e) => setShipperId(e.target.value)}
+                        disabled={editingId !== null}
+                        required
                     >
-                        キャンセル
-                    </button>
-                )}
+                        <option value="">荷主を選択</option>
+                        {shippers.map((shipper) => (
+                            <option key={shipper.id} value={shipper.id}>
+                                {shipper.name}
+                            </option>
+                        ))}
+                    </select>
+
+                    <input
+                        type="text"
+                        value={productCode}
+                        onChange={(e) => setProductCode(e.target.value)}
+                        placeholder="商品コード"
+                        required
+                    />
+
+                    <input
+                        type="text"
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                        placeholder="商品名"
+                        required
+                    />
+
+                    <button type="submit">{editingId === null ? '登録' : '編集'}</button>
+
+                    {editingId !== null && (
+                        <button
+                            type='button'
+                            onClick={() => {
+                                setEditingId(null);
+                                setShipperId('');
+                                setProductCode('');
+                                setName('');
+                            }}
+                        >
+                            キャンセル
+                        </button>
+                    )}
+
+                </form>
 
 
-            </form>
 
-
-
-            <h2>商品一覧</h2>
-            <table>
-                <thead>
-                    <tr>
-                        <th>商品ID</th>
-                        <th>荷主ID</th>
-                        <th>荷主名</th>
-                        <th>商品CD</th>
-                        <th>商品名</th>
-                        <th>処理</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {products.map((product) => (
-                        <tr key={product.id}>
-                            <td>{product.id}</td>
-                            <td>{product.shipper_id}</td>
-                            <td>{product.shipper_name}</td>
-                            <td>{product.product_code}</td>
-                            <td>{product.name}</td>
-                            <td>
-                                <button type='button' onClick={() => editProduct(product)}>
-                                    編集
-                                </button>            
-                                <button type='button' onClick={() => deleteProduct(product)}>
-                                    削除
-                                </button>
-
-                            </td>
+                <h2>商品一覧</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>商品ID</th>
+                            <th>荷主ID</th>
+                            <th>荷主名</th>
+                            <th>商品CD</th>
+                            <th>商品名</th>
+                            <th>処理</th>
                         </tr>
-                    ))}
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody>
+                        {products.map((product) => (
+                            <tr key={product.id}>
+                                <td>{product.id}</td>
+                                <td>{product.shipper_id}</td>
+                                <td>{product.shipper_name}</td>
+                                <td>{product.product_code}</td>
+                                <td>{product.name}</td>
+                                <td>
+                                    <button type='button' onClick={() => editProduct(product)}>
+                                        編集
+                                    </button>
+                                    <button type='button' onClick={() => deleteProduct(product)}>
+                                        削除
+                                    </button>
+
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
 
 
+            </div>
         </>
     );
 

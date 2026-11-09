@@ -17,14 +17,26 @@ type Stock = {
 function StockPage() {
     const [stocks, setStocks] = useState<Stock[]>([]);
     const [keyword, setKeyword] = useState('');
-    const [targetDate, setTargetDate] =
-        useState(new Date().toLocaleDateString('ja-JP').replaceAll('/', '-'));
+    // const [targetDate, setTargetDate] =
+    //     useState(new Date().toLocaleDateString('ja-JP').replaceAll('/', '-'));
+    const [targetDate, setTargetDate] = useState(() => {
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+
+        return `${year}-${month}-${day}`;
+    });
+
+
     const [showZeroNegative, setShowZeroNegative] = useState(false); // 在庫0・マイナスを表示するか
 
     // 在庫データ条件反映
     // 検索キーワード
     const filterStocks = stocks.filter(stock =>
-        (showZeroNegative || Number(stock.stock_quantity) > 0) &&
+        // 0以外を全て表示。マイナス在庫が発生する異常が起きても分かるようにしておく。
+        (showZeroNegative || Number(stock.stock_quantity) !== 0) &&
+        // (showZeroNegative || Number(stock.stock_quantity) > 0) &&
         [stock.shipper_name, stock.warehouse_name, stock.product_name]
             .some(val => val.toLowerCase().includes(keyword.toLowerCase()))
     );
@@ -130,7 +142,7 @@ function StockPage() {
                     checked={showZeroNegative}
                     onChange={e => setShowZeroNegative(e.target.checked)}
                 />
-                在庫0・マイナスを含む
+                在庫0を含む
             </label>
 
             {/* 今のところ自動で検索される仕様 20261027 */}

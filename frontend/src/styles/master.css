@@ -1,0 +1,25 @@
+/* マスター画面共通 */
+.master-page {
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+/* テーブル */
+.master-page table {
+    width: 100%;
+    table-layout: fixed;
+    border-collapse: collapse;
+}
+
+.master-page th,
+.master-page td {
+    border:1px solid #ccc;
+    text-align: left;
+    padding: 10px;
+}
+
+.master-page th{
+    background-color:  #e2e8f0;
+    color: #1e293b;
+    font-weight:bold;
+}
