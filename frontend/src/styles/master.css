@@ -1,3 +1,9 @@
+/* @import 'tailwindcss'; */
+
+/* ailwindのリセットCSSを適用せずに、テーマとユーティリティだけを使用する */
+@import "tailwindcss/theme.css";
+@import "tailwindcss/utilities.css";
+
 /* マスター画面共通 */
 .master-page {
     max-width: 800px;

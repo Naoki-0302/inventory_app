@@ -125,74 +125,111 @@ function StockPage() {
 
     };
 
-    return (
-        <>
-            <h1>在庫照会</h1>
 
-            <label>在庫基準日</label>
-            <input
-                type="date"
-                value={targetDate}
-                onChange={e => setTargetDate(e.target.value)}
-            />
+return (
+    <div className="min-h-screen bg-slate-50 px-6 py-8 text-slate-800">
+        <div className="mx-auto max-w-7xl">
 
-            <label>
+            {/* タイトル */}
+            <h1 className="mb-6 text-2xl font-bold text-slate-800">
+                在庫照会
+            </h1>
+
+            {/* 検索条件 */}
+            <div className="mb-6 flex flex-wrap items-center gap-4 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+
+                <label className="text-sm font-medium whitespace-nowrap">
+                    在庫基準日
+                </label>
+
                 <input
-                    type="checkbox"
-                    checked={showZeroNegative}
-                    onChange={e => setShowZeroNegative(e.target.checked)}
+                    type="date"
+                    value={targetDate}
+                    onChange={e => setTargetDate(e.target.value)}
+                    className="rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
                 />
-                在庫0を含む
-            </label>
 
-            {/* 今のところ自動で検索される仕様 20261027 */}
-            {/* <button onClick={fetchStocks}>再検索</button> */}
+                <label className="flex items-center gap-2 whitespace-nowrap text-sm">
+                    <input
+                        type="checkbox"
+                        checked={showZeroNegative}
+                        onChange={e => setShowZeroNegative(e.target.checked)}
+                        className="h-4 w-4 accent-blue-600"
+                    />
+                    在庫0を含む
+                </label>
 
-            <input
-                type="text"
-                value={keyword}
-                onChange={e => setKeyword(e.target.value)}
-                placeholder='荷主名・倉庫名・商品名で検索'
-            />
+                <input
+                    type="text"
+                    value={keyword}
+                    onChange={e => setKeyword(e.target.value)}
+                    placeholder="荷主名・倉庫名・商品名で検索"
+                    className="min-w-56 flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+                />
 
-            <button onClick={exportCsv}>
-                CSV出力
-            </button>
+                <button
+                    onClick={exportCsv}
+                    className="rounded-lg bg-blue-600 px-5 py-2 text-sm font-medium whitespace-nowrap text-white transition-colors hover:bg-blue-700"
+                >
+                    CSV出力
+                </button>
+            </div>
 
-            <table>
-                <thead>
-                    <tr>
-                        <th>荷主ID</th>
-                        <th>荷主</th>
-                        <th>倉庫ID</th>
-                        <th>倉庫</th>
-                        <th>商品ID</th>
-                        <th>商品CD</th>
-                        <th>商品</th>
-                        <th>ロット番号</th>
-                        <th>現在庫数</th>
-                    </tr>
-                </thead>
-
-                <tbody>
-                    {filterStocks.map((stock, index) => (
-                        <tr key={index}>
-                            <td>{stock.shipper_id}</td>
-                            <td>{stock.shipper_name}</td>
-                            <td>{stock.warehouse_id}</td>
-                            <td>{stock.warehouse_name}</td>
-                            <td>{stock.product_id}</td>
-                            <td>{stock.product_code}</td>
-                            <td>{stock.product_name}</td>
-                            <td>{stock.lot_number ?? 'ロットなし'}</td>
-                            <td>{Number(stock.stock_quantity)}</td>
+            {/* 在庫一覧 */}
+            <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
+                <table className="w-full border-collapse text-left text-sm">
+                    <thead className="bg-slate-100 text-slate-700">
+                        <tr>
+                            {[
+                                '荷主ID', '荷主', '倉庫ID', '倉庫',
+                                '商品ID', '商品CD', '商品',
+                                'ロット番号', '現在庫数'
+                            ].map(header => (
+                                <th
+                                    key={header}
+                                    className="whitespace-nowrap border-b border-slate-200 px-4 py-3 font-semibold"
+                                >
+                                    {header}
+                                </th>
+                            ))}
                         </tr>
-                    ))}
-                </tbody>
-            </table>
+                    </thead>
 
-        </>
-    );
+                    <tbody className="divide-y divide-slate-100">
+                        {filterStocks.map((stock, index) => (
+                            <tr
+                                key={index}
+                                className="transition-colors hover:bg-blue-50"
+                            >
+                                <td className="px-4 py-3">{stock.shipper_id}</td>
+                                <td className="px-4 py-3">{stock.shipper_name}</td>
+                                <td className="px-4 py-3">{stock.warehouse_id}</td>
+                                <td className="px-4 py-3">{stock.warehouse_name}</td>
+                                <td className="px-4 py-3">{stock.product_id}</td>
+                                <td className="px-4 py-3">{stock.product_code}</td>
+                                <td className="px-4 py-3">{stock.product_name}</td>
+                                <td className="px-4 py-3">
+                                    {stock.lot_number ?? 'ロットなし'}
+                                </td>
+                                <td className="px-4 py-3 text-right font-medium tabular-nums">
+                                    {Number(stock.stock_quantity)}
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+
+                {filterStocks.length === 0 && (
+                    <div className="py-10 text-center text-sm text-slate-500">
+                        該当する在庫データはありません。
+                    </div>
+                )}
+            </div>
+
+        </div>
+    </div>
+);
+
 }
 
 export default StockPage;
